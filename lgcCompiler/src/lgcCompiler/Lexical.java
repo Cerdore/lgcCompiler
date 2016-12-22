@@ -37,7 +37,7 @@ public class Lexical {
 					lineCount++ ;
 				}
 				line = temp ;
-			} catch (IOException e) {
+			} catch (Exception e) {
 				System.out.println("在getCh()中读取字符出错");
 				e.printStackTrace();
 			}

@@ -1,0 +1,7 @@
+begin
+call
+const
+1234556
+:=
+;
+:=
