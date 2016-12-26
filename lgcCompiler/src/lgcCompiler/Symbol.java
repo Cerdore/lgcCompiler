@@ -37,7 +37,7 @@ public class Symbol {
     public static final int _geq = 26;        //>=
     public static final int _lparen =27;      //(
     public static final int _rparen = 28;     //)
-    public static final int _comma =29;       //:
+    public static final int _comma =29;       //,
     public static final int _semicolon = 30;  //;
     public static final int _peroid = 31;     //.
     public static final int _become=32;       //:=

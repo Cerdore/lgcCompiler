@@ -7,7 +7,7 @@ public class SymbolTable {
     public static final int addrMax = 1000000;      //最大允许的数值
     public static final int levMax = 3;             //最大允许过程嵌套声明层数[0,levmax]
     public static final int numMax = 14;            //number的最大位数
-    public static boolean tableswitch;              //显示名字表与否
+    public static boolean tableswitch = true;              //显示名字表与否
     public static final int constant = 0;           //常量
     public static final int variable = 1;           //变量
     public static final int procedure = 2;          //过程
@@ -86,10 +86,10 @@ public class SymbolTable {
     	if(!tableswitch){
     		return ;
     	}
-    	int i = tableptr ;
+    	int i = 1 ;
     	int type ;
     	Item item = null  ;
-    	while(i>0){
+    	while(i<=tableptr){
     		try{
     			item = table[i];
         		type = item.type ;
@@ -106,7 +106,7 @@ public class SymbolTable {
         					+"   addr : "+item.addr + "   size : "+ item.size);
         			break;
         		}
-        		i--;
+        		i++;
     		}catch(Exception e){
     			System.out.println("显示符号表出错！");
     			return;

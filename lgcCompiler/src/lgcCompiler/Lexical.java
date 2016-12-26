@@ -162,8 +162,6 @@ public class Lexical {
 				if(curCh == '='){
 					sym = new Symbol(Symbol._become);
 					getCh();
-				}else{
-					sym = new Symbol(Symbol._comma);
 				}
 				break;
 			case ';' :
@@ -174,6 +172,10 @@ public class Lexical {
 				sym = new Symbol(Symbol._peroid);
 				getCh() ;
 				break ;
+			case ',' :
+				sym = new Symbol(Symbol._comma);
+				getCh();
+				break;
 		}
 		return sym ;
 	}
