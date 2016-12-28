@@ -39,7 +39,7 @@ public class Lexical {
 				line = temp ;
 			} catch (Exception e) {
 				System.out.println("在getCh()中读取字符出错");
-				e.printStackTrace();
+			//	e.printStackTrace();
 			}
 			lineLength = line.length() ;
 			chCount = 0 ;
@@ -150,11 +150,11 @@ public class Lexical {
 				}
 				break;
 			case '(' :
-				sym = new Symbol(Symbol._rparen);
+				sym = new Symbol(Symbol._lparen);
 				getCh();
 				break;
 			case ')' :
-				sym = new Symbol(Symbol._lparen);
+				sym = new Symbol(Symbol._rparen);
 				getCh();
 				break ;
 			case ':' :

@@ -1,6 +1,14 @@
 package lgcCompiler;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class SymbolTable {
+	
+	BufferedWriter bufferWritter = null ; //负责写入文件。
+	
 	public int tableptr ; //当前符号表的项指针。
     public static final int tableMax = 100;         //符号表的大小
     public static final int symMax = 10;            //符号的最大长度
@@ -48,6 +56,7 @@ public class SymbolTable {
     	switch(type){
     	case constant :
     		item.value = sym.getNum();
+    		item.lev = lev ;
     		break;
     	case variable :
     		item.lev = lev ;
@@ -62,10 +71,10 @@ public class SymbolTable {
     
     
     //查找名字为name的符号从后往前查找。
-    public int searchSymbol(String name){
+    public int searchSymbol(String name ,int lev ){
     	int i = tableptr ;
     	while(i>0){
-    		if(table[i].name.equals(name)){
+    		if(table[i].name.equals(name) && table[i].lev <= lev){
     			return i ;
     		}
     		i--;
@@ -83,34 +92,75 @@ public class SymbolTable {
      */
     
     public void printTable(){
+    	creatFileStream();
     	if(!tableswitch){
     		return ;
     	}
     	int i = 1 ;
     	int type ;
     	Item item = null  ;
-    	while(i<=tableptr){
-    		try{
-    			item = table[i];
-        		type = item.type ;
-        		switch(type){
-        		case constant :
-        			System.out.println("name : " + item.name + "  type : constant   value : " + item.value );
-        			break;
-        		case variable :
-        			System.out.println("name : " + item.name + "  type : variable   lev : " + item.lev 
-        					+"   addr : "+item.addr );
-        			break;
-        		case procedure :
-        			System.out.println("name : " + item.name + "  type : procedure   lev : " + item.lev 
-        					+"   addr : "+item.addr + "   size : "+ item.size);
-        			break;
-        		}
-        		i++;
-    		}catch(Exception e){
-    			System.out.println("显示符号表出错！");
-    			return;
-    		}
+    	char[] name = new char[10] ;
+    	try {
+			bufferWritter.write("name \n     type      value     lev       addr      size\r\n");
+			while(i<=tableptr){
+	    			item = table[i];
+	        		type = item.type ;		
+	        		switch(type){
+	        		case constant :
+	        			printName(item.name);
+	        			bufferWritter.write("constant  " + item.value +"\r\n" );
+	        			break;
+	        		case variable :
+	        			printName(item.name);
+	        			bufferWritter.write("variable            " + item.lev 
+	        					+"          "+item.addr +"\r\n");
+	        			break;
+	        		case procedure :
+	        			printName(item.name);
+	        			bufferWritter.write("procedure           " + item.lev 
+	        					+"          "+item.addr + "         "+ item.size+"\r\n");
+	        			break;
+	        		}
+	        		i++;
+	    	}
+		} catch (Exception e1) {
+			System.out.println("在输出符号表时出错");
+			e1.printStackTrace();
+		}finally{
+			try {
+				bufferWritter.flush();
+				bufferWritter.close();
+			} catch (IOException e) {
+				System.out.println("在关闭BufferWriter时出错");
+				e.printStackTrace();
+			}
+		}
+    }
+    
+    
+    private void creatFileStream(){
+    	File file = new File("SymbolTable.txt");
+    	       try {
+    	    	  if(!file.exists())
+				file.createNewFile();
+				
+				//true = append file
+	    	      FileWriter fileWritter = new FileWriter(file.getName());
+	    	            bufferWritter = new BufferedWriter(fileWritter);
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    }
+    
+    
+    private void printName(String s) throws IOException{
+    	int len =s.length() ;
+    	int n = 10 -len;
+    	bufferWritter.write( s);
+    	for(int i=0 ;i< n ;i++ ){
+    		bufferWritter.write(" ");
     	}
     }
 }

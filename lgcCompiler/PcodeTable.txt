@@ -1,0 +1,9 @@
+f		l		a 
+LIT		0		3
+STO		1		5
+LIT		0		2
+STO		2		5
+LIT		0		1
+STO		1		6
+OPR		0		16
+STO		0		5

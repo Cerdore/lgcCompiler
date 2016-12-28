@@ -1,0 +1,14 @@
+name 
+     type      value     lev       addr      size
+a         constant  1
+b         constant  2
+c         variable            0          5
+d         variable            0          6
+pro01     procedure           0          7         0
+e         constant  3
+f         constant  4
+g         variable            1          5
+h         variable            1          6
+pro11     procedure           1          7         0
+pro12     procedure           1          8         0
+pro02     procedure           0          8         0

@@ -112,8 +112,11 @@ public class Grammatical {
 		System.out.println("输出符号表");
 		table.printTable();
 		
+		
+		
 		System.out.println("输出Pcode码 ， len is : " + arrayPtr );
 		Pcode.printPcode(arrayPtr);
+		
 	}
 	/*
 	 * 分析分程序
@@ -130,49 +133,54 @@ public class Grammatical {
 			error.report(32, lexical.lineCount);
 			return ;
 		}
+		
+		int flag = 0 ;
+//		do{
 			//如果是常量。
 			if(sym.getSymtype()==Symbol._const){
 				nextSymbol();
 				constdecldeal(lev);
 			}
-			
-			//如果是变量
-			if(sym.getSymtype()==Symbol._var){
-				nextSymbol();
-				vardecldeal(lev);
-			}
-			
-			/*
-			 * 如果是过程
-			 * <过程说明部分> ::= <过程首部><分程序>{;<过程说明部分>};
-			 * <过程首部> ::= procedure<标识符>;
-			 */
-			while(sym.getSymtype() == Symbol._procedure){
-				print("this is proceduce");
-				nextSymbol();
-				procapitaldeal(lev);
-				//处理完过程首部，又将遇到分程序，此时分程序的FOLLOW集为{;}
-				nextlev.set(Symbol._semicolon);
-				subProgram(lev+1,nextlev);
-				//如果读到；
-				if(sym.getSymtype()==Symbol._semicolon){
+				
+				//如果是变量
+				if(sym.getSymtype()==Symbol._var){
 					nextSymbol();
-				}else{
-					error.report(5, lexical.lineCount);
+					vardecldeal(lev);
 				}
-				//则接下来可能遇到<过程说明部分>或者<语句>。nextlev =<过程说明部分> U {_procedure}
-				nextlev = (BitSet) statFirSet.clone();
-				nextlev.set(Symbol._procedure);
-				//跳过不合法字符。直到遇到过程或者{.}
-				testSymbol(nextlev, fbs, 6);
-			}
+				
+				
+				/*
+				 * 如果是过程
+				 * <过程说明部分> ::= <过程首部><分程序>{;<过程说明部分>};
+				 * <过程首部> ::= procedure<标识符>;
+				 */
+				while(sym.getSymtype() == Symbol._procedure){
+					print("this is proceduce");
+					nextSymbol();
+					procapitaldeal(lev);
+					//处理完过程首部，又将遇到分程序，此时分程序的FOLLOW集为{;}
+					nextlev.set(Symbol._semicolon);
+					
+					print("马上要进入分程序");
+					subProgram(lev+1,nextlev);
+					//如果读到；
+					if(sym.getSymtype()==Symbol._semicolon){
+						nextSymbol();
+					}else{
+						error.report(5, lexical.lineCount);
+					}
+				}
+//		}while(declFirSet.get(sym.getSymtype()));
+	
 		//跳过非语句部分直到遇到语句或者{.}
-		nextlev = (BitSet) statFirSet.clone();
-		testSymbol(nextlev, fbs, 9);
+				
+				
 		//下面进行语句的分析部分。
 		if(statFirSet.get(sym.getSymtype())){
 			statementdeal(fbs,lev);
 		}
+		
+		dx =dx0;
 	}
 	
 	
@@ -188,16 +196,279 @@ public class Grammatical {
 		//<赋值语句> ::= <标识符>:=<表达式>
 		case Symbol._ident :   
 			assignStatement(fbs, lev);
+			break;
+		case Symbol._if :
+			ifStatment(fbs,lev) ;
+			break ;
+		case Symbol._while :
+			whileStatment(fbs,lev);
+			break;
+		case Symbol._call :
+			callStatment(fbs,lev) ;
+			break;
+		case Symbol._read :
+			readStatment(fbs,lev);
+			break;
+		case Symbol._write :
+			writeStatment(fbs,lev);
+			break;
+		case Symbol._begin :
+			beginStatment(fbs,lev);
+			break;
+		case Symbol._repeat :
+			repeatStatment(fbs,lev);
+			break;
+		default:
+            BitSet nextlev = new BitSet(Symbol.symnum);
+            testSymbol(fbs, nextlev, 19);                                    //语句后的符号不正确
+            break;
 		}
 		
 	}
+	//<重复语句> ::= repeat<语句>{;<语句>}until<条件>
+	private void repeatStatment(BitSet fbs, int lev) {
+		int cx1 =arrayPtr;
+		nextSymbol();
+		BitSet nextlev = (BitSet) fbs.clone();
+		nextlev.set(Symbol._semicolon);
+		nextlev.set(Symbol._until);
+		statementdeal(nextlev, lev);
+		while(statFirSet.get(sym.getSymtype())||sym.getSymtype() == Symbol._semicolon){
+			if(sym.getSymtype()==Symbol._semicolon ){
+				nextSymbol();
+			}else{
+				error.report(34, lexical.lineCount);
+			}
+			statementdeal(nextlev, lev);
+		}
+		nextlev = new BitSet();
+		nextlev.set(Symbol._until);
+		testSymbol(nextlev, fbs, 38);
+		if(sym.getSymtype() == Symbol._until){
+			nextSymbol();
+			conditionStatment(fbs, lev);
+			genPcode(Pcode.JPC, 0, cx1);
+		}else{
+			error.report(38, lexical.lineCount);
+		}
+		
+	}
+
+	//<复合语句> ::= begin<语句>{;<语句>}end
+	private void beginStatment(BitSet fbs, int lev) {
+		nextSymbol();
+		BitSet nextlev = (BitSet) fbs.clone();
+		nextlev.set(Symbol._semicolon);
+		nextlev.set(Symbol._end);
+		statementdeal(nextlev, lev);
+		//分析{;<语句>}并且忽略掉忘记写；的情况
+		while(statFirSet.get(sym.getSymtype())|| sym.getSymtype() == Symbol._semicolon){
+			if(sym.getSymtype() == Symbol._semicolon){
+				nextSymbol();
+			}else{
+				error.report(10, lexical.lineCount);
+			}
+			statementdeal(nextlev, lev);
+		}
+		if(sym.getSymtype() == Symbol._end){
+			nextSymbol();
+		}else{
+			error.report(17, lexical.lineCount);
+		}
+	}
+
+	//<写语句> ::= write'('<标识符>{,<标识符>}')‘
+	private void writeStatment(BitSet fbs, int lev) {
+		nextSymbol();
+		if(sym.getSymtype() == Symbol._lparen){
+			nextSymbol();
+			int index = -1 ;
+			do{
+				if(sym.getSymtype() == Symbol._ident){
+					index = table.searchSymbol(sym.getId(),lev);
+				}else{
+					error.report(14, lexical.lineCount);
+				}
+				
+				if(index > 0 ){
+					Item item = table.getItem(index);
+					
+					if(item.type == SymbolTable.variable){
+						genPcode(Pcode.LOD, lev - item.lev, item.addr); // 将变量放入栈顶
+						genPcode(Pcode.OPR,0,14); // 输出栈顶的值。
+					}else if(item.type == SymbolTable.constant){
+						genPcode(Pcode.LOD, 0 , item.value); // 将常量放入栈顶
+						genPcode(Pcode.OPR,0,14); // 输出栈顶的值。
+					}else{
+						error.report(11, lexical.lineCount);
+					}
+					
+				}else{
+					error.report(11, lexical.lineCount);
+				}
+				nextSymbol();
+			}while(sym.getSymtype() == Symbol._comma);
+			
+			if(sym.getSymtype() == Symbol._rparen){
+				nextSymbol();
+			}else{
+				error.report(33,lexical.lineCount);
+			}
+			
+		}else{
+			error.report(34, lexical.lineCount);
+		}
+		genPcode(Pcode.OPR,0,15);
+	}
+
+	//<读语句> ::= read'('<标识符>{,<标识符>}')‘
+	private void readStatment(BitSet fbs, int lev) {
+		nextSymbol();
+		if(sym.getSymtype() == Symbol._lparen){
+			int index = -1 ;
+			do{
+				nextSymbol();
+				if(sym.getSymtype() == Symbol._ident){
+					index = table.searchSymbol(sym.getId(),lev);
+				}else{
+					error.report(14, lexical.lineCount);
+				}
+				if(index > 0 ){
+					Item item = table.getItem(index);
+					if(item.type == SymbolTable.variable){
+						genPcode(Pcode.OPR, 0, 16);
+						genPcode(Pcode.STO,lev - item.lev, item.addr);
+					}else{
+						error.report(38, lexical.lineCount);
+					}
+				}else{
+					error.report(11, lexical.lineCount);
+				}
+				nextSymbol();
+			}while(sym.getSymtype() == Symbol._comma) ;
+		}else{
+			error.report(34, lexical.lineCount);
+		}
+		if(sym.getSymtype() == Symbol._rparen){
+			nextSymbol();
+		}else{
+			error.report(33, lexical.lineCount);
+			BitSet nextlev = new BitSet();
+			nextlev.set(Symbol._rparen);
+			testSymbol(nextlev, fbs, 33);
+		}
+	}
+
+	//<过程调用语句> ::= call<标识符>
+	private void callStatment(BitSet fbs, int lev) {
+		nextSymbol();
+		if(sym.getSymtype() == Symbol._ident){
+			int index = table.searchSymbol(sym.getId(),lev);
+			if(index > 0){
+				Item item = table.getItem(index);
+				if(item.type == SymbolTable.procedure){
+					genPcode(Pcode.CAL, lev - item.lev, item.addr);
+				}else{
+					error.report(15, lexical.lineCount);
+				}
+			}else{
+				error.report(11, lexical.lineCount);
+			}
+			nextSymbol();
+		}else{
+			error.report(14, lexical.lineCount);
+		}
+		
+	}
+
+	//<当型循环语句> ::= while<条件>do<语句>
+	private void whileStatment(BitSet fbs, int lev) {
+		int cx1 = arrayPtr ;
+		BitSet nextlev = (BitSet) fbs.clone();
+		nextlev.set(Symbol._do);
+		nextSymbol();
+		conditionStatment(nextlev, lev);
+		int cx2 = arrayPtr ;
+		genPcode(Pcode.JPC,0,0);
+		if(sym.getSymtype() == Symbol._do){
+			nextSymbol();
+		}else{
+			error.report(18, lexical.lineCount);
+		}
+		statementdeal(fbs, lev);
+		genPcode(Pcode.JMP, 0, cx1);
+		Pcode.arrayPcode[cx2].a = arrayPtr;
+		
+	}
+
+	/*
+	 * <条件语句> ::= if<条件>then<语句>[else<语句>]
+	 */
+	private void ifStatment(BitSet fbs, int lev) {
+		nextSymbol();
+		//<条件>的FOLLOW集
+		BitSet nextlev = (BitSet) fbs.clone();
+		nextlev.set(Symbol._then);
+		conditionStatment(nextlev,lev);
+		if(sym.getSymtype() == Symbol._then){
+			nextSymbol();
+		}else{
+			error.report(16, lexical.lineCount);
+		}
+		int cx1 = arrayPtr ;
+		genPcode(Pcode.JPC, 0, 0); // 条件跳转指令，暂时记为0
+		
+		nextlev = (BitSet) fbs.clone();
+		nextlev.set(Symbol._else);
+		statementdeal(nextlev, lev);
+		Pcode.arrayPcode[cx1].a = arrayPtr ;
+		if(sym.getSymtype() == Symbol._else){
+			Pcode.arrayPcode[cx1].a++;
+			nextSymbol();
+			int temptr = arrayPtr ;
+			genPcode(Pcode.JMP, 0, 0);
+			statementdeal(fbs, lev);
+			Pcode.arrayPcode[cx1].a = temptr ;
+		}
+	}
+	/*
+	 * <条件> ::= <表达式><关系运算符><表达式>|odd<表达式>
+	 * <关系运算符> ::= =|<>|<|<=|>|>=
+	 * <条件语句> ::= if<条件>then<语句>[else<语句>]
+	 */
+	private void conditionStatment(BitSet fbs, int lev) {
+		if(sym.getSymtype() == Symbol._odd){
+			expression(fbs, lev);
+			genPcode(Pcode.OPR, 0, 6);
+		}else{
+			BitSet nextlev = (BitSet) fbs.clone();
+			nextlev.set(Symbol._eql);
+			nextlev.set(Symbol._neq);
+			nextlev.set(Symbol._less);
+			nextlev.set(Symbol._leq);
+			nextlev.set(Symbol._gtr);
+			nextlev.set(Symbol._geq);
+			expression(nextlev, lev);
+			if(sym.getSymtype() == Symbol._eql||sym.getSymtype() == Symbol._neq||
+					sym.getSymtype() == Symbol._less || sym.getSymtype() == Symbol._leq ||
+					sym.getSymtype() == Symbol._gtr||sym.getSymtype() == Symbol._geq){
+				int type = sym.getSymtype();
+				nextSymbol();
+				expression(fbs, lev);
+				genPcode(Pcode.OPR, 0, type);
+			}else{
+				error.report(20, lexical.lineCount);
+			}
+		}
+	}
+
 	/*
 	 * 赋值语句处理
 	 *@param fbs 此模块的FOLLOW集  对于赋值语句应为{.}
 	 *@param lev 层次
 	 */
 	private void assignStatement(BitSet fbs, int lev) {
-		int index = table.searchSymbol(sym.getId());
+		int index = table.searchSymbol(sym.getId(),lev);
 		
 		//index>0表示搜索到了这个标识符。
 		if(index >0 ){
@@ -304,7 +575,7 @@ public class Grammatical {
 		
 		if(facFirSet.get(sym.getSymtype())){
 			if(sym.getSymtype() == Symbol._ident){
-				int index = table.searchSymbol(sym.getId());
+				int index = table.searchSymbol(sym.getId(),lev);
 				if(index > 0 ){
 					Item item = table.getItem(index);
 					
@@ -451,7 +722,7 @@ public class Grammatical {
 		if(arrayPtr > Pcode.arrayCount){
 			error.report(36, lexical.lineCount);
 		}else{
-			Pcode.arrayPcode[arrayPtr] = new Pcode(f,l,a);
+			Pcode.arrayPcode[arrayPtr++] = new Pcode(f,l,a);
 		}
 	}
 	

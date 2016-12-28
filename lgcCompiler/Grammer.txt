@@ -1,3 +1,16 @@
-var a ,b ,c ,d; 
-a:=1
-.
+const  a = 1, b =2;
+var c ,d;
+procedure pro01;
+	const e =3 , f=4 ;
+	var g ,h;
+	procedure pro11;
+		g:=e
+	;
+	procedure pro12;
+		c:=b
+	;
+;
+procedure pro02;
+	d:=a
+;
+read (c)

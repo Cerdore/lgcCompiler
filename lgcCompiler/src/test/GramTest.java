@@ -1,5 +1,11 @@
 package test;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import lgcCompiler.Grammatical;
 import lgcCompiler.Lexical;
 import lgcCompiler.SymbolTable;
